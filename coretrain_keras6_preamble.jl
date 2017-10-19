@@ -1,8 +1,6 @@
 push!(LOAD_PATH, "../code/")
-using XGBoost
-DMatrix(hcat([1.0])) # to force load
 
-using OBOParse, Brenda, EZLearn
+using OBOParse, EZLearn
 
 using EZLearn
 import EZLearn.train_and_predict
@@ -52,19 +50,7 @@ if length(ARGS) > 2
         PARAMS["expr.method"] = "new2_newauto_val5_best10"
         val=val[4:end]
     end
-    if startswith(val, "xgboost2")
-      PARAMS["expr.method"] = "xgboost2"
-      val = val[9:end]
-    end
-    if startswith(val, "xgboost")
-      PARAMS["expr.method"] = "xgboost"
-      val = val[8:end]
-    end
-    if startswith(val, "lightgbm")
-      PARAMS["expr.method"] = "lightgbm"
-      val = val[9:end]
-    end
-    if startswith(val, "append")
+   if startswith(val, "append")
       PARAMS["expr.intersect"] = "append_both"
       val = val[7:end]
     end
