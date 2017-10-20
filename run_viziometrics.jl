@@ -8,15 +8,8 @@ abstract ExprView <: EZLearn.ClassifierView
 
 const PARAMS = Dict(
     "intersection.threshold" => 0.3,
-    "initial.text_subsample" => 1,
-    "expr.sgd" => true,
-    "expr.method" => "new2_newauto_val5",
-    "text.valsplit" => 0.05,
-    "text.intersect" => "append_both",
-    "text.method" => "ft"
+    "text.intersect" => "append_both"
 )
-
-@show PARAMS
 
 
 PARAMS["output.file"] = "/scratch/grechkin/vizio_ezlearn_keras6_generic.sqlite"
