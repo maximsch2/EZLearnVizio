@@ -1,7 +1,25 @@
-include("coretrain_keras6_preamble.jl")
+using OBOParse, EZLearn
+
+import EZLearn.train_and_predict
+import EZLearn.construct_labels
+
+abstract TextView <: EZLearn.ClassifierView
+abstract ExprView <: EZLearn.ClassifierView
+
+const PARAMS = Dict(
+    "intersection.threshold" => 0.3,
+    "initial.text_subsample" => 1,
+    "expr.sgd" => true,
+    "expr.method" => "new2_newauto_val5",
+    "text.valsplit" => 0.05,
+    "text.intersect" => "append_both",
+    "text.method" => "ft"
+)
+
+@show PARAMS
 
 
-PARAMS["output.file"] = "/scratch/grechkin/vizio_ezlearn_keras6_generic2_$(oname).sqlite"
+PARAMS["output.file"] = "/scratch/grechkin/vizio_ezlearn_keras6_generic.sqlite"
 const ONTOLOGY_FILE = "figure_ontology.obo"
 const FigOnto = OBOParse.load(ONTOLOGY_FILE, "FIG")
 
