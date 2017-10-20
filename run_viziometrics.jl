@@ -26,7 +26,6 @@ const FigOnto = OBOParse.load(ONTOLOGY_FILE, "FIG")
 const ONTOLOGY = FigOnto
 const RELS = [:is_a]
 
-
 include("coretrain_expr_sgd.jl")
 include("coretrain_fasttext.jl")
 include("vizio_data.jl")
@@ -34,8 +33,11 @@ const ExprProv, TextProv = load_vizio_data()
 
 include("ezlearn_runner.jl")
 
-gsms = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_samples(TextProv))))
-initial = get_initial_beliefs("/scratch/grechkin/init_vizio.sqlite", "text_1", gsms)
+samples = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_samples(TextProv))))
+# Uncomment the following to run on a subsample:
+# samples = samples[1:10000]
 
-task = initialize_task(PARAMS, gsms, initial)
+initial = get_initial_beliefs("/scratch/grechkin/init_vizio.sqlite", "text_1", samples)
+
+task = initialize_task(PARAMS, samples, initial)
 run_task(task)
