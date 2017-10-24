@@ -26,11 +26,13 @@ const ExprProv, TextProv = load_vizio_data()
 
 include("ezlearn_runner.jl")
 
-samples = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_samples(TextProv))))
+all_sample_ids = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_samples(TextProv))))
+
 # Uncomment the following to run on a subsample:
-# samples = samples[1:10000]
+all_sample_ids = all_sample_ids[1:5000]
 
-initial = get_initial_beliefs("/scratch/grechkin/init_vizio.sqlite", "text_1", samples)
+#initial = get_initial_beliefs("/scratch/grechkin/init_vizio.sqlite", "text_1", all_sample_ids)
+initial = construct_initial_labels(all_sample_ids, OBOParse.allterms(FigOnto))
 
-task = initialize_task(PARAMS, samples, initial)
+task = initialize_task(PARAMS, all_sample_ids, initial)
 run_task(task)
