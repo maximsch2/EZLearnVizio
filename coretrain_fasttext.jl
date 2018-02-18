@@ -45,7 +45,7 @@ function train_text_fasttext(cls::FastTextClassifier, all_gsms, train_labels)
     for s in strings
       write(io, s * "\n")
     end
-    predictions = readstring(`fasttext predict-prob $(model_fn).bin $path 25`)
+    predictions = readstring(`../fastText-0.1.0/fasttext predict-prob $(model_fn).bin $path 25`)
     rm(model_fn * ".bin"; force=true)
     result = Dict()
     for (i, line) in enumerate(split(predictions, "\n"))

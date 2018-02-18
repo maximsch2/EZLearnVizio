@@ -31,7 +31,7 @@ Install tensorflow and numpy (use whatever ) and (use *which python* to get the 
 Pkg.build("PyCall")
 ```
 
-The algorithm is built using [Facebook's FastText](https://github.com/facebookresearch/fastText) which can be installed as below (commands for Linux).
+The algorithm is built using [Facebook's FastText](https://github.com/facebookresearch/fastText) which can be installed as below (commands for Linux). Make sure to run these commands in the same directory as the EZLearnVizio folder.
 
 ```
 wget https://github.com/facebookresearch/fastText/archive/v0.1.0.zip
@@ -39,5 +39,3 @@ unzip v0.1.0.zip
 cd fastText-0.1.0
 make
 ```
-
-You may also want to set ```export PATH="/home/hemant/Vizometrics/fastText-0.1.0:$PATH"```
