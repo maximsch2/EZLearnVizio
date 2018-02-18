@@ -109,7 +109,7 @@ function prepare_training_data(cls::FastTextClassifier, train_labels)
     end
   end
   shuffle!(result)
-  println("expanded to ", length(result), "samples")
+  println("expanded to ", length(result), " samples")
   return result
 end
 
@@ -117,7 +117,7 @@ function get_FT_model(cls::FastTextClassifier, train_labels)
   model_fn = mktemp() do path, io
     @show path
     write(io, prepare_training_data(cls, train_labels))
-    run(`fasttext supervised -input $path -output $(path)_model $(split(cls.params))`)
+    run(`../fastText-0.1.0/fasttext supervised -input $path -output $(path)_model $(split(cls.params))`)
     path * "_model"
   end
 

@@ -12,7 +12,7 @@ const PARAMS = Dict(
 )
 
 
-PARAMS["output.file"] = "/scratch/grechkin/vizio_ezlearn_keras6_generic.sqlite"
+PARAMS["output.file"] = "data/vizio_ezlearn_keras6_generic.sqlite"
 const ONTOLOGY_FILE = "figure_ontology.obo"
 const FigOnto = OBOParse.load(ONTOLOGY_FILE, "FIG")
 
@@ -31,7 +31,7 @@ all_sample_ids = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_s
 # Uncomment the following to run on a subsample:
 all_sample_ids = all_sample_ids[1:5000]
 
-#initial = get_initial_beliefs("/scratch/grechkin/init_vizio.sqlite", "text_1", all_sample_ids)
+#initial = get_initial_beliefs("data/init_vizio.sqlite", "text_1", all_sample_ids)
 initial = construct_initial_labels(all_sample_ids, OBOParse.allterms(FigOnto))
 
 task = initialize_task(PARAMS, all_sample_ids, initial)
