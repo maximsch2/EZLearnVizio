@@ -166,7 +166,7 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     model[:compile](optimizer=cls.optimizer, loss="categorical_crossentropy", metrics=["accuracy"])
     model[:summary]()
     if cls.use_cw
-      cw = get_class_weight(train_Y')
+      cw = get_class_weight(train_Y)
       model[:fit](train_X, train_Y, epochs=100, batch_size=cls.batch_size, validation_split=cls.val_split, callbacks=callbacks, class_weight=cw)
     else
       model[:fit](train_X, train_Y, epochs=100, batch_size=cls.batch_size, validation_split=cls.val_split, callbacks=callbacks)
