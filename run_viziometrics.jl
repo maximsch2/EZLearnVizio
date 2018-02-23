@@ -22,17 +22,21 @@ const RELS = [:is_a]
 include("coretrain_expr_sgd.jl")
 include("coretrain_fasttext.jl")
 include("vizio_data.jl")
-const ExprProv, TextProv = load_vizio_data()
+# Minibatching implemented
+ExprProv, TextProv = load_vizio_data(1,5000)
 
 include("ezlearn_runner.jl")
+include("sampling.jl")
 
 all_sample_ids = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_samples(TextProv))))
 
 # Uncomment the following to run on a subsample:
-all_sample_ids = all_sample_ids[1:5000]
+# all_sample_ids = all_sample_ids[1:5000]
 
 #initial = get_initial_beliefs("data/init_vizio.sqlite", "text_1", all_sample_ids)
 initial = construct_initial_labels(all_sample_ids, OBOParse.allterms(FigOnto))
 
 task = initialize_task(PARAMS, all_sample_ids, initial)
 run_task(task)
+
+println(size(all_sample_ids))

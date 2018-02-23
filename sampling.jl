@@ -53,24 +53,19 @@ loss(w,x,y) = (sumabs2(y-predict(w,x)) / size(x,2))
 
 lossgradient  = grad(loss)
 
-#const vizio_data_h5 = h5open("data/vizio_data.h5", "r")
-#const vizio_data = readmmap(vizio_data_h5["data"])
-#const vizio_h5_samples = read(vizio_data_h5["samples"]);
-#const vizio_captions_h5 = h5open("data/vizio_captions.h5", "r")
-#const vizio_all_captions = read(vizio_captions_h5["captions"]);
-# TODO make compatible with vizio data
+# TODO make minibatch compatible with vizio data
 
 # Testing functions with housing data
-include("data/housing.jl")
-x,y = housing()
-w = Any[0.1*randn(1,13), 0.0]
-
-xtrain, ytrain, xtest, ytest = train_test_split(x,y)
-batchsize = 100
-
-dtrain = minibatch(xtrain, ytrain, batchsize)
-dtest = minibatch(xtest, ytest, batchsize)
-
-for i=1:10; train(w, [(xtrain,ytrain)]); println(loss(w,xtrain,ytrain)); end
-
-println(accuracy(w, dtest))
+# include("data/housing.jl")
+# x,y = housing()
+# w = Any[0.1*randn(1,13), 0.0]
+#
+# xtrain, ytrain, xtest, ytest = train_test_split(x,y)
+# batchsize = 100
+#
+# dtrain = minibatch(xtrain, ytrain, batchsize)
+# dtest = minibatch(xtest, ytest, batchsize)
+#
+# for i=1:10; train(w, [(xtrain,ytrain)]); println(loss(w,xtrain,ytrain)); end
+#
+# println(accuracy(w, dtest))

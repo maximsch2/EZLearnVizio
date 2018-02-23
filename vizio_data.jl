@@ -6,14 +6,15 @@ const vizio_h5_samples = read(vizio_data_h5["samples"]);
 const h5_samples_dict = Dict([(sample, i) for (i, sample) in enumerate(vizio_h5_samples)]);
 const h5_samples_dict_upcase = Dict([(uppercase(sample), i) for (i, sample) in enumerate(vizio_h5_samples)]);
 
-
 const vizio_captions_h5 = h5open("data/vizio_captions.h5", "r")
 const vizio_all_captions = read(vizio_captions_h5["captions"]);
 
 get_caption(sample_id) = vizio_all_captions[h5_samples_dict_upcase[sample_id]]
 
-function load_vizio_data()
-    VecDataProvider(vizio_data, h5_samples_dict), TextDataProvider(vizio_all_captions, vizio_h5_samples, h5_samples_dict_upcase)
+function load_vizio_data(start_i,batch_size)
+    h5_samples_dict_mini = Dict([(sample, i) for (i, sample) in enumerate(vizio_h5_samples[start_i:start_i+batch_size])]);
+    h5_samples_dict_upcase_mini = Dict([(uppercase(sample), i) for (i, sample) in enumerate(vizio_h5_samples[start_i:start_i+batch_size])]);
+    VecDataProvider(vizio_data[:,start_i:start_i+batch_size], h5_samples_dict_mini), TextDataProvider(vizio_all_captions[start_i:start_i+batch_size], vizio_h5_samples[start_i:start_i+batch_size], h5_samples_dict_upcase_mini)
 end
 
 
