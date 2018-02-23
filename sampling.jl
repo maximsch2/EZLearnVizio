@@ -48,12 +48,21 @@ function minibatch(x, y, batchsize)
     return data
 end
 
-predict(w,x) = w[1]*x .+ w[2]
-loss(w,x,y) = (sumabs2(y-predict(w,x)) / size(x,2))
+# predict(w,x) = w[1]*x .+ w[2]
+# loss(w,x,y) = (sumabs2(y-predict(w,x)) / size(x,2))
+#
+# lossgradient  = grad(loss)
 
-lossgradient  = grad(loss)
+# TODO make minibatch for stratified sampling
 
-# TODO make minibatch compatible with vizio data
+function minibatch(dsize, batchsize)
+    indi = Any[]
+    for i=1:batchsize:dsize
+        j=min(i+batchsize-1,dsize)
+        push!(indi, (i, j))
+    end
+    return indi
+end
 
 # Testing functions with housing data
 # include("data/housing.jl")
