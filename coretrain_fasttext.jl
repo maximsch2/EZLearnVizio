@@ -91,7 +91,6 @@ function prepare_training_data(cls::FastTextClassifier, train_labels)
     labels_str = map(x->"__label__"*x, labels)
     str = join(labels_str, " ") * " " * all_strings[i] * "\n"
     push!(result, str)
-
     # to balanace the dataset:
     if cls.balance == 0
       continue

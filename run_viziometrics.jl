@@ -23,7 +23,7 @@ include("coretrain_expr_sgd.jl")
 include("coretrain_fasttext.jl")
 include("vizio_data.jl")
 # Minibatching implemented
-ExprProv, TextProv = load_vizio_data(1,5000)
+ExprProv, TextProv = load_vizio_data(1,10000)
 
 include("ezlearn_runner.jl")
 include("sampling.jl")
