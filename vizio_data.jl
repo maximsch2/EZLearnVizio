@@ -11,10 +11,12 @@ const vizio_all_captions = read(vizio_captions_h5["captions"]);
 
 get_caption(sample_id) = vizio_all_captions[h5_samples_dict_upcase[sample_id]]
 
+# Reset back to normal
+# Ignore samples with no labels for training but not prediction
 function load_vizio_data(start_i,batch_size)
-    h5_samples_dict_mini = Dict([(sample, i) for (i, sample) in enumerate(vizio_h5_samples[start_i:start_i+batch_size])]);
-    h5_samples_dict_upcase_mini = Dict([(uppercase(sample), i) for (i, sample) in enumerate(vizio_h5_samples[start_i:start_i+batch_size])]);
-    VecDataProvider(vizio_data[:,start_i:start_i+batch_size], h5_samples_dict_mini), TextDataProvider(vizio_all_captions[start_i:start_i+batch_size], vizio_h5_samples[start_i:start_i+batch_size], h5_samples_dict_upcase_mini)
+    h5_samples_dict_mini = Dict([(sample, i) for (i, sample) in enumerate(vizio_h5_samples[start_i:start_i+batch_size-1])]);
+    h5_samples_dict_upcase_mini = Dict([(uppercase(sample), i) for (i, sample) in enumerate(vizio_h5_samples[start_i:start_i+batch_size-1])]);
+    VecDataProvider(vizio_data[:,start_i:start_i+batch_size-1], h5_samples_dict_mini), TextDataProvider(vizio_all_captions[start_i:start_i+batch_size-1], vizio_h5_samples[start_i:start_i+batch_size-1], h5_samples_dict_upcase_mini)
 end
 
 
