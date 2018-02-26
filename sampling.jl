@@ -48,7 +48,6 @@ function minibatch(x, y, batchsize)
     return data
 end
 
-# TODO make minibatch for stratified sampling
 
 # function vizio_minibatch(dsize, batchsize)
 #     indi = Any[]
