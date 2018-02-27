@@ -1,0 +1,201 @@
+format-version: 1.2
+date: 03:05:2017 11:13
+saved-by: grechkin
+auto-generated-by: OBO-Edit 2.3.1
+default-namespace: default_namespace
+
+[Term]
+id: FIG:0000000
+name: Figure
+created_by: grechkin
+creation_date: 2017-03-28T12:41:48Z
+
+[Term]
+id: FIG:0000001
+name: Plot
+is_a: FIG:0000000 ! Figure
+created_by: grechkin
+creation_date: 2017-03-28T12:41:59Z
+
+[Term]
+id: FIG:0000002
+name: Scatter plot
+is_a: FIG:0000001 ! Plot
+created_by: grechkin
+creation_date: 2017-03-28T12:42:53Z
+
+[Term]
+id: FIG:0000003
+name: Bar plot
+synonym: "Bar chart" EXACT []
+synonym: "Histogram" RELATED []
+is_a: FIG:0000001 ! Plot
+created_by: grechkin
+creation_date: 2017-03-28T12:42:53Z
+
+[Term]
+id: FIG:0000004
+name: Line plot
+synonym: "Line chart" RELATED []
+synonym: "Trend plot" RELATED []
+is_a: FIG:0000001 ! Plot
+created_by: grechkin
+creation_date: 2017-03-28T12:42:53Z
+
+[Term]
+id: FIG:0000005
+name: Kaplan-Meier plot
+synonym: "Survival curve" RELATED []
+is_a: FIG:0000004 ! Line plot
+created_by: grechkin
+creation_date: 2017-03-28T12:42:53Z
+
+[Term]
+id: FIG:0000006
+name: Radiography
+is_a: FIG:0000008 ! Image
+created_by: grechkin
+creation_date: 2017-05-02T18:02:35Z
+
+[Term]
+id: FIG:0000007
+name: Heatmap
+is_a: FIG:0000001 ! Plot
+created_by: grechkin
+creation_date: 2017-03-28T12:42:53Z
+
+[Term]
+id: FIG:0000008
+name: Image
+is_a: FIG:0000000 ! Figure
+created_by: grechkin
+creation_date: 2017-03-28T12:43:04Z
+
+[Term]
+id: FIG:0000009
+name: Microscopy image
+synonym: "photomicrograph" RELATED []
+is_a: FIG:0000008 ! Image
+created_by: grechkin
+creation_date: 2017-03-28T12:49:50Z
+
+[Term]
+id: FIG:0000010
+name: CT image
+is_a: FIG:0000006 ! Radiography
+created_by: grechkin
+creation_date: 2017-05-02T18:02:56Z
+
+[Term]
+id: FIG:0000011
+name: Screenshot
+is_a: FIG:0000008 ! Image
+created_by: grechkin
+creation_date: 2017-05-02T18:32:40Z
+
+[Term]
+id: FIG:0000012
+name: Box plot
+is_a: FIG:0000001 ! Plot
+created_by: grechkin
+creation_date: 2017-04-07T12:01:02Z
+
+[Term]
+id: FIG:0000013
+name: Diagram
+is_a: FIG:0000000 ! Figure
+created_by: grechkin
+creation_date: 2017-04-07T12:01:24Z
+
+[Term]
+id: FIG:0000014
+name: Chemical structure
+synonym: "Molecular structure" RELATED []
+synonym: "Molecule" RELATED []
+is_a: FIG:0000013 ! Diagram
+created_by: grechkin
+creation_date: 2017-04-07T12:02:04Z
+
+[Term]
+id: FIG:0000015
+name: Phylogenetic tree
+synonym: "Phylogeny tree" RELATED []
+is_a: FIG:0000017 ! Tree diagram
+created_by: grechkin
+creation_date: 2017-04-07T12:02:04Z
+
+[Term]
+id: FIG:0000016
+name: Ultrasound
+is_a: FIG:0000008 ! Image
+creation_date: 2017-05-03T11:13:14Z
+
+[Term]
+id: FIG:0000017
+name: Tree diagram
+is_a: FIG:0000013 ! Diagram
+created_by: grechkin
+creation_date: 2017-04-07T12:02:08Z
+
+[Term]
+id: FIG:0000018
+name: Retinal photo
+synonym: "Retina" RELATED []
+is_obsolete: true
+created_by: grechkin
+creation_date: 2017-04-07T12:03:51Z
+
+[Term]
+id: FIG:0000019
+name: MRI
+synonym: "fMRI" RELATED []
+synonym: "Magnetic Resonance Image" RELATED []
+synonym: "MRI image" RELATED []
+is_a: FIG:0000006 ! Radiography
+created_by: grechkin
+creation_date: 2017-04-07T12:04:47Z
+
+[Term]
+id: FIG:0000020
+name: Venn diagram
+synonym: "Set diagram" RELATED []
+is_a: FIG:0000013 ! Diagram
+created_by: grechkin
+creation_date: 2017-04-07T12:06:53Z
+
+[Term]
+id: FIG:0000021
+name: Pie chart
+is_a: FIG:0000001 ! Plot
+created_by: grechkin
+creation_date: 2017-04-07T12:07:59Z
+
+[Term]
+id: FIG:0000022
+name: Gel electrophoresis
+synonym: "Electrophoresis gel " RELATED []
+is_a: FIG:0000008 ! Image
+creation_date: 2017-04-14T11:57:05Z
+
+[Term]
+id: FIG:0000023
+name: Flow diagram
+synonym: "Flow chart" RELATED []
+synonym: "Flowchart" RELATED []
+is_a: FIG:0000013 ! Diagram
+created_by: grechkin
+creation_date: 2017-04-14T11:58:05Z
+
+[Term]
+id: FIG:0000024
+name: Western blot
+is_a: FIG:0000008 ! Image
+created_by: grechkin
+creation_date: 2017-04-14T11:59:26Z
+
+[Term]
+id: FIG:0000025
+name: Map
+is_a: FIG:0000013 ! Diagram
+creation_date: 2017-04-28T16:32:34Z
+
