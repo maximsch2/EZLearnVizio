@@ -137,10 +137,10 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # labels_int = Int32[parse(Int32, getAtIndicesDict(bto,5:length(bto))) for bto in possible_labels]
     Nlabels = length(possible_labels)
 
-    minibatch_size = 5000
-    epochs = 100
+    minibatch_size = val_size
+    epochs = 5
     mini_batches = vizio_minibatch(length(train_gsms),minibatch_size)
-
+    num_batches = length(mini_batches)
 	# 2048 = size(train_x,2)
     input = kL.Input(shape=(2048,))
     activation = kL.Dense(Nlabels, activation="softmax", input_dim=minibatch_size,
@@ -163,9 +163,12 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # val_X = collect_vecs(cls.prov, val_gsms)
 	all_X = collect_vecs(cls.prov, all_gsms)
 
-    for e in 1:5
-        println("Epoch ",e)
-        for mb in 1:length(mini_batches)
+    for e in 1:epochs
+        println("Epoch: ",e,"/",epochs)
+        batchn = 0
+        for mb in 1:num_batches
+            batchn+=1
+            println("Batch No: ",batchn,"/",num_batches)
             train_gsms_mini = train_gsms[mini_batches[mb][1]:mini_batches[mb][2]]
             train_labels_mini = getAtIndicesDict(train_labels,mini_batches[mb][1]:mini_batches[mb][2])
             train_X_mini = collect_vecs(cls.prov, train_gsms_mini)
@@ -179,9 +182,9 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
             end
         end
         # Validation accuracy
-        val_X = collect_vecs(cls.prov, val_gsms)
-        val_probs = model[:predict](all_X, verbose=false)
-        count = 0
+        # val_X = collect_vecs(cls.prov, val_gsms)
+        # val_probs = model[:predict](all_X, verbose=false)
+        # count = 0
 		# TODO validation loss, accuracy
         # for (i, vp) in enumerate(val_probs)
         #     vp_probs = val_probs[i, :]

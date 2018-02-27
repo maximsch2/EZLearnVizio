@@ -22,8 +22,8 @@ const RELS = [:is_a]
 include("coretrain_expr_sgd.jl")
 include("coretrain_fasttext.jl")
 include("vizio_data.jl")
-# Minibatching implemented
-ExprProv, TextProv = load_vizio_data(1,10000)
+# Minibatching implemented (Can also train on part of the data (1174456))
+ExprProv, TextProv = load_vizio_data(1,100000)
 
 include("ezlearn_runner.jl")
 include("sampling.jl")
