@@ -161,7 +161,8 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
 
     # train_Y = get_labels_from_dict(train_gsms, train_labels, possible_labels_idx)'
     # val_X = collect_vecs(cls.prov, val_gsms)
-	all_X = collect_vecs(cls.prov, all_gsms)
+    val_X = collect_vecs(cls.prov, val_gsms)
+    val_Y = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)'
 
     for e in 1:epochs
         println("Epoch: ",e,"/",epochs)
@@ -176,9 +177,9 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
             # @show size(train_X_mini), size(train_Y_mini)
             if cls.use_cw
               cw = get_class_weight(train_Y)
-              model[:fit](train_X_mini, train_Y_mini, epochs=1, callbacks=callbacks, class_weight=cw)
+              model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks, class_weight=cw)
             else
-              model[:fit](train_X_mini, train_Y_mini, epochs=1, callbacks=callbacks)
+              model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks)
             end
         end
         # Validation accuracy
@@ -194,6 +195,7 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
         # println("Validation Acc: ",count/val_size)
     end
 
+    all_X = collect_vecs(cls.prov, all_gsms)
     all_probs = model[:predict](all_X, verbose=true)
 
     @show size(all_probs)
