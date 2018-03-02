@@ -113,6 +113,30 @@ function getAtIndicesDict(dict_labels,indices)
     return filterDict
 end
 
+function trainBatchGenerator(cls_prov, train_gsms, train_labels, possible_labels_idx, mini_batches)
+    while true
+      for mb in 1:length(mini_batches)
+          train_gsms_mini = train_gsms[mini_batches[mb][1]:mini_batches[mb][2]]
+          train_labels_mini = getAtIndicesDict(train_labels,mini_batches[mb][1]:mini_batches[mb][2])
+          train_X_mini = collect_vecs(cls_prov, train_gsms_mini)
+          train_Y_mini = get_labels_from_dict(train_gsms_mini, train_labels_mini, possible_labels_idx)'
+          train_X_mini, train_Y_mini
+      end
+    end
+end
+
+function valBatchGenerator(cls_prov, val_gsms, val_labels, possible_labels_idx, val_mini_batches)
+    while true
+        for mbv in :length(val_mini_batches)
+            val_gsms_mini = val_gsms[val_mini_batches[mb][1]:val_mini_batches[mb][2]]
+            val_labels_mini = getAtIndicesDict(val_labels,mini_batches[mb][1]:mini_batches[mb][2])
+            val_X_mini = collect_vecs(cls_prov, val_gsms_mini)
+            val_Y_mini = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)
+            val_X_mini, val_Y_mini
+        end
+    end
+end
+
 function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_labels)
     ssize = length(all_gsms)
     # approx 5% for validation
@@ -138,9 +162,12 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     Nlabels = length(possible_labels)
 
     minibatch_size = val_size
+    val_batch_size = div(val_size,5)
     epochs = 5
     mini_batches = vizio_minibatch(length(train_gsms),minibatch_size)
     num_batches = length(mini_batches)
+    val_mini_batches = vizio_minibatch(val_size,val_batch_size)
+    num_val_batches = length(val_mini_batches)
 	# 2048 = size(train_x,2)
     input = kL.Input(shape=(2048,))
     activation = kL.Dense(Nlabels, activation="softmax", input_dim=minibatch_size,
@@ -159,40 +186,36 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     model = kM.Model(inputs=input, outputs=activation)
     model[:compile](optimizer=cls.optimizer, loss="categorical_crossentropy", metrics=["accuracy"])
 
-    # train_Y = get_labels_from_dict(train_gsms, train_labels, possible_labels_idx)'
+    # Convert train and val batches into generator
     # val_X = collect_vecs(cls.prov, val_gsms)
-    val_X = collect_vecs(cls.prov, val_gsms)
-    val_Y = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)'
+    # val_Y = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)'
 
-    for e in 1:epochs
-        println("Epoch: ",e,"/",epochs)
-        batchn = 0
-        for mb in 1:num_batches
-            batchn+=1
-            println("Batch No: ",batchn,"/",num_batches)
-            train_gsms_mini = train_gsms[mini_batches[mb][1]:mini_batches[mb][2]]
-            train_labels_mini = getAtIndicesDict(train_labels,mini_batches[mb][1]:mini_batches[mb][2])
-            train_X_mini = collect_vecs(cls.prov, train_gsms_mini)
-            train_Y_mini = get_labels_from_dict(train_gsms_mini, train_labels_mini, possible_labels_idx)'
-            # @show size(train_X_mini), size(train_Y_mini)
-            if cls.use_cw
-              cw = get_class_weight(train_Y)
-              model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks, class_weight=cw)
-            else
-              model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks)
-            end
-        end
-        # Validation accuracy
-        # val_X = collect_vecs(cls.prov, val_gsms)
-        # val_probs = model[:predict](all_X, verbose=false)
-        # count = 0
-		# TODO validation loss, accuracy
-        # for (i, vp) in enumerate(val_probs)
-        #     vp_probs = val_probs[i, :]
-        #     vp_label = predicted_terms[indmax(vp_probs)]
-        #     count+= vp_label == val_labels[i]
-        # end
-        # println("Validation Acc: ",count/val_size)
+    # for e in 1:epochs
+    #     println("Epoch: ",e,"/",epochs)
+    #     batchn = 0
+    #     for mb in 1:num_batches
+    #         batchn+=1
+    #         println("Batch No: ",batchn,"/",num_batches)
+    #         train_gsms_mini = train_gsms[mini_batches[mb][1]:mini_batches[mb][2]]
+    #         train_labels_mini = getAtIndicesDict(train_labels,mini_batches[mb][1]:mini_batches[mb][2])
+    #         train_X_mini = collect_vecs(cls.prov, train_gsms_mini)
+    #         train_Y_mini = get_labels_from_dict(train_gsms_mini, train_labels_mini, possible_labels_idx)'
+    #         # @show size(train_X_mini), size(train_Y_mini)
+    #         if cls.use_cw
+    #           cw = get_class_weight(train_Y)
+    #           model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks, class_weight=cw)
+    #         else
+    #           model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks)
+    #         end
+    #     end
+    # end
+    println("Starting training")
+    if cls.use_cw
+        model[:fit_generator](generator=trainBatchGenerator(cls.prov, train_gsms, train_labels, possible_labels_idx, mini_batches), steps_per_epoch=num_batches, epochs=epochs, verbose=true, shuffle=true,
+            validation_data=valBatchGenerator(cls.prov, val_gsms, val_labels, possible_labels_idx, val_mini_batches), validation_steps=num_val_batches, callbacks=callbacks, class_weight=cw)
+    else
+        model[:fit_generator](generator=trainBatchGenerator(cls.prov, train_gsms, train_labels, possible_labels_idx, mini_batches), steps_per_epoch=num_batches, epochs=epochs, verbose=true, shuffle=true,
+            validation_data=valBatchGenerator(cls.prov, val_gsms, val_labels, possible_labels_idx, val_mini_batches), validation_steps=num_val_batches, callbacks=callbacks)
     end
 
     all_X = collect_vecs(cls.prov, all_gsms)
