@@ -45,7 +45,7 @@ function train_text_fasttext(cls::FastTextClassifier, all_gsms, train_labels)
     for s in strings
       write(io, s * "\n")
     end
-    predictions = readstring(`fasttext predict-prob $(model_fn).bin $path 25`)
+    predictions = readstring(`../fastText-0.1.0/fasttext predict-prob $(model_fn).bin $path 25`)
     rm(model_fn * ".bin"; force=true)
     result = Dict()
     for (i, line) in enumerate(split(predictions, "\n"))
@@ -91,7 +91,6 @@ function prepare_training_data(cls::FastTextClassifier, train_labels)
     labels_str = map(x->"__label__"*x, labels)
     str = join(labels_str, " ") * " " * all_strings[i] * "\n"
     push!(result, str)
-
     # to balanace the dataset:
     if cls.balance == 0
       continue
@@ -109,7 +108,7 @@ function prepare_training_data(cls::FastTextClassifier, train_labels)
     end
   end
   shuffle!(result)
-  println("expanded to ", length(result), "samples")
+  println("expanded to ", length(result), " samples")
   return result
 end
 
@@ -117,7 +116,7 @@ function get_FT_model(cls::FastTextClassifier, train_labels)
   model_fn = mktemp() do path, io
     @show path
     write(io, prepare_training_data(cls, train_labels))
-    run(`fasttext supervised -input $path -output $(path)_model $(split(cls.params))`)
+    run(`../fastText-0.1.0/fasttext supervised -input $path -output $(path)_model $(split(cls.params))`)
     path * "_model"
   end
 

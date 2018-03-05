@@ -92,27 +92,61 @@ end
 
 train_and_predict(v::SGDExpressionClassifier, labels, task) = train_expr_sgd_file(v, task.all_samples, labels)
 
+function vizio_minibatch(dsize, batchsize)
+    indi = Any[]
+    for i=1:batchsize:dsize
+        j=min(i+batchsize-1,dsize)
+        push!(indi, (i, j))
+    end
+    return indi
+end
+
+function getAtIndicesDict(dict_labels,indices)
+    filterDict = Dict{String,Array{String,1}}()
+    counter = 0
+    for (n, val) in enumerate(dict_labels)
+        counter+=1
+        if counter in indices
+			filterDict[val[1]] = val[2]
+        end
+	end
+    return filterDict
+end
 
 function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_labels)
+    ssize = length(all_gsms)
+    # approx 5% for validation
+    val_size = Int(round(ssize*0.05))
+    val_ind = rand(1:ssize,val_size)
+    train_ind = setdiff(1:ssize,val_ind)
+
+    train_labels = getAtIndicesDict(train_labels,train_ind)
+    val_labels = getAtIndicesDict(train_labels,val_ind)
 
     train_gsms = sort(collect(keys(train_labels)))
+    val_gsms = sort(collect(keys(val_labels)))
+
     @show SEED
     srand(SEED)
     train_gsms = train_gsms[randperm(length(train_gsms))]
 
     possible_labels = unique(vcat(values(train_labels)...));
     possible_labels_idx = Dict([(possible_labels[i], i) for i=1:length(possible_labels)])
+	predicted_terms = Int32[parse(Int64, bto[5:end]) for bto in possible_labels]
 
+    # labels_int = Int32[parse(Int32, getAtIndicesDict(bto,5:length(bto))) for bto in possible_labels]
     Nlabels = length(possible_labels)
 
-    train_Y = get_labels_from_dict(train_gsms, train_labels, possible_labels_idx)'
+    minibatch_size = val_size
+    epochs = 5
+    mini_batches = vizio_minibatch(length(train_gsms),minibatch_size)
+    num_batches = length(mini_batches)
+	# 2048 = size(train_x,2)
+    input = kL.Input(shape=(2048,))
+    activation = kL.Dense(Nlabels, activation="softmax", input_dim=minibatch_size,
+        kernel_regularizer=kR.l2(cls.L2Reg), kernel_initializer="zeros")(input)
 
-    train_X = collect_vecs(cls.prov, train_gsms)
-    @show size(train_X), size(train_Y)
-
-    input = kL.Input(shape=(size(train_X, 2),))
-    activation = kL.Dense(Nlabels, activation="softmax", input_dim=size(train_X, 2), 
-                          kernel_regularizer=kR.l2(cls.L2Reg), kernel_initializer="zeros")(input)
+    # TODO implement without keras
     if cls.droplr
       lrdrop = kC.ReduceLROnPlateau(monitor="val_loss", patience=5)
       early_stopping = kC.EarlyStopping(monitor="val_loss", patience=10, min_delta=0.01)
@@ -124,11 +158,41 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
 
     model = kM.Model(inputs=input, outputs=activation)
     model[:compile](optimizer=cls.optimizer, loss="categorical_crossentropy", metrics=["accuracy"])
-    if cls.use_cw
-      cw = get_class_weight(train_Y')
-      model[:fit](train_X, train_Y, epochs=100, batch_size=cls.batch_size, validation_split=cls.val_split, callbacks=callbacks, class_weight=cw)
-    else
-      model[:fit](train_X, train_Y, epochs=100, batch_size=cls.batch_size, validation_split=cls.val_split, callbacks=callbacks)
+
+    # train_Y = get_labels_from_dict(train_gsms, train_labels, possible_labels_idx)'
+    # val_X = collect_vecs(cls.prov, val_gsms)
+    val_X = collect_vecs(cls.prov, val_gsms)
+    val_Y = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)'
+
+    for e in 1:epochs
+        println("Epoch: ",e,"/",epochs)
+        batchn = 0
+        for mb in 1:num_batches
+            batchn+=1
+            println("Batch No: ",batchn,"/",num_batches)
+            train_gsms_mini = train_gsms[mini_batches[mb][1]:mini_batches[mb][2]]
+            train_labels_mini = getAtIndicesDict(train_labels,mini_batches[mb][1]:mini_batches[mb][2])
+            train_X_mini = collect_vecs(cls.prov, train_gsms_mini)
+            train_Y_mini = get_labels_from_dict(train_gsms_mini, train_labels_mini, possible_labels_idx)'
+            # @show size(train_X_mini), size(train_Y_mini)
+            if cls.use_cw
+              cw = get_class_weight(train_Y)
+              model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks, class_weight=cw)
+            else
+              model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks)
+            end
+        end
+        # Validation accuracy
+        # val_X = collect_vecs(cls.prov, val_gsms)
+        # val_probs = model[:predict](all_X, verbose=false)
+        # count = 0
+		# TODO validation loss, accuracy
+        # for (i, vp) in enumerate(val_probs)
+        #     vp_probs = val_probs[i, :]
+        #     vp_label = predicted_terms[indmax(vp_probs)]
+        #     count+= vp_label == val_labels[i]
+        # end
+        # println("Validation Acc: ",count/val_size)
     end
 
     all_X = collect_vecs(cls.prov, all_gsms)
@@ -136,7 +200,6 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
 
     @show size(all_probs)
 
-    predicted_terms = Int32[parse(Int64, bto[5:end]) for bto in possible_labels]
     resultBeliefs = Dict()
     @showprogress "Collecting results..." for (i, sample) in enumerate(all_gsms)
       probs = all_probs[i, :]
@@ -144,4 +207,3 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     end
     resultBeliefs, (model[:get_weights](), predicted_terms, model[:history][:history])
 end
-
