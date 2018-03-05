@@ -25,8 +25,12 @@ produce_text_beliefs(beliefs, thresh, initial) = intersect_labels_core(threshold
                                                               initial,
                                                       OntologyIntersector; append_left=true, append_right=true)
 
+produce_expr_beliefs(beliefs, thresh, initial) = intersect_labels_core(threshold_beliefs2(beliefs["text"][end], thresh),
+                                                              initial,
+                                                      OntologyIntersector; append_left=true, append_right=true)
 
-produce_expr_beliefs(beliefs, thresh, initial) = threshold_beliefs2(beliefs["text"][end], thresh)
+
+#produce_expr_beliefs(beliefs, thresh, initial) = threshold_beliefs2(beliefs["text"][end], thresh)
 
 import EZLearn.construct_labels
 import EZLearn.train_and_predict
