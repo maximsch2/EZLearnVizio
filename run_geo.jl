@@ -8,7 +8,7 @@ abstract ExprView <: EZLearn.ClassifierView
 
 const PARAMS = Dict()
 
-PARAMS["output.file"] = "/scratch/grechkin/geo_ezlearn_keras6_generic.sqlite"
+PARAMS["output.file"] = "data/geo_ezlearn_keras6_generic.sqlite"
 const ONTOLOGY_FILE = "data/BrendaTissueOBO"
 const BrendaOntology = OBOParse.load(ONTOLOGY_FILE, "BTO")
 

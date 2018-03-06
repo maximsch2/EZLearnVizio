@@ -92,7 +92,7 @@ end
 
 train_and_predict(v::SGDExpressionClassifier, labels, task) = train_expr_sgd_file(v, task.all_samples, labels)
 
-function vizio_minibatch(dsize, batchsize)
+function custom_minibatch(dsize, batchsize)
     indi = Any[]
     for i=1:batchsize:dsize
         j=min(i+batchsize-1,dsize)
@@ -138,7 +138,7 @@ end
 # end
 
 function custom_earlyStopping(loss_history, patience=10,min_delta=0.01)
-    println(loss_history)
+    # println(loss_history)
     num_epochs = length(loss_history)
     if num_epochs>patience
         delta = maximum(loss_history[num_epochs-patience+1:num_epochs])-minimum(loss_history[num_epochs-patience+1:num_epochs])
@@ -177,12 +177,12 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     minibatch_size = val_size
     val_batch_size = div(val_size,5)
     epochs = 100
-    mini_batches = vizio_minibatch(length(train_gsms),minibatch_size)
+    mini_batches = custom_minibatch(length(train_gsms),minibatch_size)
     num_batches = length(mini_batches)
-    # val_mini_batches = vizio_minibatch(val_size,val_batch_size)
+    # val_mini_batches = custom_minibatch(val_size,val_batch_size)
     # num_val_batches = length(val_mini_batches)
-	# 2048 = size(train_x,2)
-    input = kL.Input(shape=(2048,))
+    train_X_temp = collect_vecs(cls.prov, train_gsms[1:3])
+    input = kL.Input(shape=(size(train_X_temp,2),))
     activation = kL.Dense(Nlabels, activation="softmax", input_dim=minibatch_size,
         kernel_regularizer=kR.l2(cls.L2Reg), kernel_initializer="zeros")(input)
 
