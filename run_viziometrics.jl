@@ -6,11 +6,7 @@ import EZLearn.construct_labels
 abstract TextView <: EZLearn.ClassifierView
 abstract ExprView <: EZLearn.ClassifierView
 
-const PARAMS = Dict(
-    "intersection.threshold" => 0.3,
-    "text.intersect" => "append_both"
-)
-
+const PARAMS = Dict()
 
 PARAMS["output.file"] = "data/vizio_ezlearn_keras6_generic.sqlite"
 const ONTOLOGY_FILE = "figure_ontology.obo"
@@ -34,7 +30,7 @@ all_sample_ids = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_s
 # all_sample_ids = all_sample_ids[1:5000]
 
 #initial = get_initial_beliefs("data/init_vizio.sqlite", "text_1", all_sample_ids)
-initial = construct_initial_labels(all_sample_ids, OBOParse.allterms(FigOnto))
+initial = construct_initial_labels(all_sample_ids, OBOParse.allterms(ONTOLOGY))
 
 task = initialize_task(PARAMS, all_sample_ids, initial)
 run_task(task)
