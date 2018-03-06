@@ -153,9 +153,9 @@ end
 function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_labels)
     ssize = length(all_gsms)
     # approx 5% for validation
-    val_size = Int(round(ssize*0.05))
-    val_ind = rand(1:ssize,val_size)
-    train_ind = setdiff(1:ssize,val_ind)
+    val_size = min(10000, Int(round(ssize*0.05)))
+    val_ind = rand(1:ssize, val_size)
+    train_ind = setdiff(1:ssize, val_ind)
 
     train_labels = getAtIndicesDict(train_labels,train_ind)
     val_labels = getAtIndicesDict(train_labels,val_ind)
@@ -174,8 +174,7 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # labels_int = Int32[parse(Int32, getAtIndicesDict(bto,5:length(bto))) for bto in possible_labels]
     Nlabels = length(possible_labels)
 
-    minibatch_size = val_size
-    val_batch_size = div(val_size,5)
+    minibatch_size = cls.batch_size
     epochs = 100
     mini_batches = custom_minibatch(length(train_gsms),minibatch_size)
     num_batches = length(mini_batches)
@@ -200,13 +199,9 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # Convert train and val batches into generator
     val_X = collect_vecs(cls.prov, val_gsms)
     val_Y = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)'
-    earlyStop = false
     loss_history = []
     m_history = 0
     for e in 1:epochs
-        if earlyStop==true
-            break
-        end
         println("Epoch No.: ",e,"/",epochs)
         batchn = 0
         batch_loss_history = []
@@ -224,10 +219,12 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
             else
               m_history = model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks)
             end
-            push!(batch_loss_history,m_history[:history]["val_acc"][1])
+            push!(batch_loss_history, m_history[:history]["val_acc"][1])
         end
-        push!(loss_history,mean(batch_loss_history))
-        earlyStop = custom_earlyStopping(loss_history)
+        push!(loss_history, batch_loss_history[end])
+        if custom_earlyStopping(loss_history)
+            break
+        end
     end
 
     # if cls.use_cw
