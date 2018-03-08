@@ -78,15 +78,7 @@ function score_prec_recall_generic(correct, pred)
     precision, recall
 end
 
-get_pred_thresh_upstream(thresh, ontology) =
-    function f(preds)
-        term_ids = String[x[1] for x in preds if x[2] > thresh]
-        terms = Term[get_term(id, ontology) for id in term_ids]
-        upterms = Set(upstream(terms, ontology))
-        upterms
-    end
-
-function score_prec_recall_generic_transform(correct, pred, pred_func)
+function score_prec_recall_thresh_upstream(correct, pred, thresh, ontology)
     pred_transformed = Dict{String, Set{Term}}()
     correct_gsms = Set(keys(correct))
     for (gsm, preds) in pred
@@ -94,16 +86,13 @@ function score_prec_recall_generic_transform(correct, pred, pred_func)
             continue
         end
 
-        pred_transformed[gsm] = pred_func(preds)
+        term_ids = String[x[1] for x in preds if x[2] > thresh]
+        terms = Term[get_term(id, ontology) for id in term_ids]
+        pred_transformed[gsm] = Set(upstream(terms, ontology))
     end
 
     score_prec_recall_generic(correct, pred_transformed)
 end
-
-
-
-score_prec_recall_thresh_upstream(correct, pred, thresh, ontology) =
-    score_prec_recall_generic_transform(correct, pred, get_pred_thresh_upstream(thresh, ontology))
 
 
 function pr2auc(PR)
