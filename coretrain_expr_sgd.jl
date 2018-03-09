@@ -235,9 +235,22 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     #         validation_data=valBatchGenerator(cls.prov, val_gsms, val_labels, possible_labels_idx, val_mini_batches), validation_steps=1, callbacks=callbacks)
     # end
 
-    all_X = collect_vecs(cls.prov, all_gsms)
-    all_probs = model[:predict](all_X, verbose=true)
+    # Prediction in batches
+    mini_batches_all = custom_minibatch(ssize,Int(round(ssize*0.1)))
+    num_batches_all = length(mini_batches_all)
+    all_probs = 0
+    for mb in 1:num_batches_all
+        mini_all_X = collect_vecs(cls.prov, all_gsms[mini_batches_all[mb][1]:mini_batches_all[mb][2]])
+        probs_mini = model[:predict](mini_all_X, verbose=true)
+        if mb==1
+            all_probs = probs_mini
+        else
+            all_probs = vcat(all_probs, probs_mini)
+        end
+    end
 
+    # all_X = collect_vecs(cls.prov, all_gsms)
+    # all_probs = model[:predict](all_X, verbose=true)
     @show size(all_probs)
 
     resultBeliefs = Dict()
