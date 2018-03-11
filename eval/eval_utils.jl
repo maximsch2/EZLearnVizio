@@ -1,6 +1,4 @@
-
-using SQLite, OBOParse, Plots
-FigOnto = OBOParse.load("figure_ontology.obo", "FIG")
+using SQLite, OBOParse
 
 function read_sample(db, tblname, sample_name)
     query = "select term_name as term_id, prob from $tblname, samples, terms" *
@@ -39,9 +37,8 @@ end
 
 # %%
 
-const ROOT = gettermbyname(FigOnto, "Figure")
-upstream(term::Term, ontology, root=ROOT) = union([term], Vector{Term}(setdiff(ancestors(ontology, term), [root])))
-upstream(terms::Vector{Term}, ontology, root=ROOT) = union([upstream(t, ontology, root) for t in terms]...)
+upstream(term::Term, ontology, root) = union([term], Vector{Term}(setdiff(ancestors(ontology, term, symbols), root)))
+upstream(terms::Vector{Term}, ontology, root) = union([upstream(t, ontology, root) for t in terms]...)
 
 
 function score_prec_recall_generic(correct, pred)
@@ -78,7 +75,7 @@ function score_prec_recall_generic(correct, pred)
     precision, recall
 end
 
-function score_prec_recall_thresh_upstream(correct, pred, thresh, ontology)
+function score_prec_recall_thresh_upstream(correct, pred, thresh, ontology, root)
     pred_transformed = Dict{String, Set{Term}}()
     correct_gsms = Set(keys(correct))
     for (gsm, preds) in pred
@@ -88,7 +85,7 @@ function score_prec_recall_thresh_upstream(correct, pred, thresh, ontology)
 
         term_ids = String[x[1] for x in preds if x[2] > thresh]
         terms = Term[get_term(id, ontology) for id in term_ids]
-        pred_transformed[gsm] = Set(upstream(terms, ontology))
+        pred_transformed[gsm] = Set(upstream(terms, ontology, root))
     end
 
     score_prec_recall_generic(correct, pred_transformed)
@@ -109,11 +106,11 @@ function pr2auc(PR)
     area
 end
 
-function get_PR_upstream(correct, preds, bounds, ontology)
+function get_PR_upstream(correct, preds, bounds, ontology, root)
     P = Float64[]
     R = Float64[]
     for t in bounds
-        (prec, rec) = score_prec_recall_thresh_upstream(correct, preds, t, ontology)
+        (prec, rec) = score_prec_recall_thresh_upstream(correct, preds, t, ontology, root)
         push!(P, prec)
         push!(R, rec)
     end

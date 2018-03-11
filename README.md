@@ -15,7 +15,6 @@ Pkg.add("JLD")
 Pkg.build("HDF5")
 Pkg.build("JLD")
 Pkg.add("Memoize")
-Pkg.add("Plots")
 ```
 
 We use a python bridge to use tensorflow and numpy and the bridge can be build as below (julia commands).

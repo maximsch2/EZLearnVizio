@@ -13,7 +13,7 @@ const ONTOLOGY_FILE = "data/BrendaTissueOBO"
 const BrendaOntology = OBOParse.load(ONTOLOGY_FILE, "BTO")
 
 const ONTOLOGY = BrendaOntology
-const RELS = [:is_a,:develops_from,:part_of]
+const RELS = [:is_a,:develops_from,:part_of,:related_to]
 
 include("coretrain_expr_sgd.jl")
 include("coretrain_fasttext.jl")
