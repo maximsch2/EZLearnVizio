@@ -25,7 +25,7 @@ Pkg.add("PyCall")
 
 Install tensorflow and numpy (use whatever ) and (use *which python* to get the path) set the ENV["PYTHON"] = *path_of_python_to_use* and then build PyCall.
 
-> Note: Note: Avoid Conda Python
+> Note:  Avoid Conda Python
 
 ```
 Pkg.build("PyCall")

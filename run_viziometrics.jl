@@ -22,7 +22,7 @@ include("vizio_data.jl")
 ExprProv, TextProv = load_vizio_data(1,100000)
 
 include("ezlearn_runner.jl")
-include("sampling.jl")
+# include("sampling.jl")
 
 all_sample_ids = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_samples(TextProv))))
 
