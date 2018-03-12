@@ -14,7 +14,7 @@ if !isfile("geo_precomputed.sqlite")
 end
 evalDB = SQLite.DB("geo_precomputed.sqlite")
 
-const test_samples = SQLite.query(evalDB, "select sample from torrente_manual_labels_v where sample not in (select sample from lee_manual_labels_v)")[:sample].values;
+const test_samples = SQLite.query(evalDB, "select sample from torrente_manual_labels_v where sample not in (select sample from lee_manual_labels_v)")[:sample];
 
 const ground_truth = load_samples(evalDB, "torrente_manual_labels", test_samples)
 # %%

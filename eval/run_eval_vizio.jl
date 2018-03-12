@@ -1,6 +1,7 @@
 using JSON 
 
 # %%
+const symbols=[:is_a]
 include("eval_utils.jl")
 
 const FigOnto = OBOParse.load("figure_ontology.obo", "FIG")
@@ -13,7 +14,7 @@ if !isfile("vizio_precomputed.sqlite")
 end
 evalDB = SQLite.DB("vizio_precomputed.sqlite")
 
-img_locs = SQLite.query(evalDB, "select sample from ground_truth_v")[:sample].values;
+img_locs = SQLite.query(evalDB, "select sample from ground_truth_v")[:sample];
 
 #dev_img_locs = img_locs_ordered[1:250];
 #writecsv("dev_img_locs.csv", dev_img_locs)
