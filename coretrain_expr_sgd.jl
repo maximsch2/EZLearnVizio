@@ -1,5 +1,5 @@
 using ProgressMeter, JLD, StatsBase
-using HDF5, PyCall
+using HDF5, PyCall, Knet
 SEED = Int32(get(PARAMS, "global.seed", 123456789))
 
 @pyimport numpy as np
@@ -181,51 +181,95 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # val_mini_batches = custom_minibatch(val_size,val_batch_size)
     # num_val_batches = length(val_mini_batches)
     train_X_temp = collect_vecs(cls.prov, train_gsms[1:3])
-    input = kL.Input(shape=(size(train_X_temp,2),))
-    activation = kL.Dense(Nlabels, activation="softmax", input_dim=minibatch_size,
-        kernel_regularizer=kR.l2(cls.L2Reg), kernel_initializer="zeros")(input)
+    # input = kL.Input(shape=(size(train_X_temp,2),))
+    predict(w,x) = w[1]*mat(x) .+ w[2]
+    loss(w,x,ygold) =  nll(predict(w,x), ygold)
 
-    # TODO implement without keras
-    callbacks = []
-    if cls.droplr
-      lrdrop = kC.ReduceLROnPlateau(monitor="val_loss", patience=5)
-      # early_stopping = kC.EarlyStopping(monitor="val_loss", patience=10, min_delta=0.01)
-      callbacks = [lrdrop]
-    end
+    lossgradient = grad(loss)
 
-    model = kM.Model(inputs=input, outputs=activation)
-    model[:compile](optimizer=cls.optimizer, loss="categorical_crossentropy", metrics=["accuracy"])
+    w = Any[0.1*randn(Float32,size(possible_labels,1),size(train_X_temp,2)), zeros(Float32,size(possible_labels,1),1)]
+    Knetlr = 0.05
+    # activation = kL.Dense(Nlabels, activation="softmax", input_dim=minibatch_size,
+    #     kernel_regularizer=kR.l2(cls.L2Reg), kernel_initializer="zeros")(input)
+    #
+    # # TODO implement without keras
+    # callbacks = []
+    # if cls.droplr
+    #   lrdrop = kC.ReduceLROnPlateau(monitor="val_loss", patience=5)
+    #   # early_stopping = kC.EarlyStopping(monitor="val_loss", patience=10, min_delta=0.01)
+    #   callbacks = [lrdrop]
+    # end
+    #
+    # model = kM.Model(inputs=input, outputs=activation)
+    # model[:compile](optimizer=cls.optimizer, loss="categorical_crossentropy", metrics=["accuracy"])
 
     # Convert train and val batches into generator
     val_X = collect_vecs(cls.prov, val_gsms)
     val_Y = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)'
+    val_Y_int = []
+    for yind in 1:size(val_Y,1)
+        append!(val_Y_int,indmax(val_Y[yind,:]))
+    end
+    val_X = transpose(mat(val_X))
+    val_Y_int = convert(Array{UInt8},val_Y_int)
+
     loss_history = []
     m_history = 0
     for e in 1:epochs
-        println("Epoch No.: ",e,"/",epochs)
+        println((:epoch,e,"/",epochs))
         batchn = 0
-        batch_loss_history = []
+        println((:batch,0,"/",num_batches))
         for mb in 1:num_batches
             batchn+=1
-            println("Batch No.: ",batchn,"/",num_batches)
             train_gsms_mini = train_gsms[mini_batches[mb][1]:mini_batches[mb][2]]
             train_labels_mini = getAtIndicesDict(train_labels,mini_batches[mb][1]:mini_batches[mb][2])
             train_X_mini = collect_vecs(cls.prov, train_gsms_mini)
             train_Y_mini = get_labels_from_dict(train_gsms_mini, train_labels_mini, possible_labels_idx)'
-            # @show size(train_X_mini), size(train_Y_mini)
-            if cls.use_cw
-              cw = get_class_weight(train_Y)
-              m_history = model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks, class_weight=cw)
-            else
-              m_history = model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks)
+            train_Y_mini_int = []
+            for yind in 1:size(train_Y_mini,1)
+                append!(train_Y_mini_int,indmax(train_Y_mini[yind,:]))
             end
-            push!(batch_loss_history, m_history[:history]["val_acc"][1])
-        end
-        push!(loss_history, batch_loss_history[end])
-        if custom_earlyStopping(loss_history)
-            break
+            train_X_mini = transpose(mat(train_X_mini))
+            train_Y_mini_int = convert(Array{UInt8},train_Y_mini_int)
+
+            # for i in 1:length(train_Y_mini_int)
+            #     dw = lossgradient(w, train_X_mini[i,:], train_Y_mini_int[i])
+            #     for i in 1:length(w)
+            #         w[i] -= Knetlr * dw[i]
+            #     end
+            # end
+            dw = lossgradient(w, train_X_mini, train_Y_mini_int)
+            for i in 1:length(w)
+                w[i] -= Knetlr * dw[i]
+            end
+            println((:batch, batchn,"/",num_batches, :trn, loss(w,train_X_mini,train_Y_mini_int), :tst, loss(w,val_X,val_Y_int)))
         end
     end
+    # for e in 1:epochs
+    #     println("Epoch No.: ",e,"/",epochs)
+    #     batchn = 0
+    #     batch_loss_history = []
+    #     for mb in 1:num_batches
+    #         batchn+=1
+    #         println("Batch No.: ",batchn,"/",num_batches)
+    #         train_gsms_mini = train_gsms[mini_batches[mb][1]:mini_batches[mb][2]]
+    #         train_labels_mini = getAtIndicesDict(train_labels,mini_batches[mb][1]:mini_batches[mb][2])
+    #         train_X_mini = collect_vecs(cls.prov, train_gsms_mini)
+    #         train_Y_mini = get_labels_from_dict(train_gsms_mini, train_labels_mini, possible_labels_idx)'
+    #         # @show size(train_X_mini), size(train_Y_mini)
+    #         if cls.use_cw
+    #           cw = get_class_weight(train_Y)
+    #           m_history = model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks, class_weight=cw)
+    #         else
+    #           m_history = model[:fit](train_X_mini, train_Y_mini, epochs=1, validation_data=(val_X,val_Y), callbacks=callbacks)
+    #         end
+    #         push!(batch_loss_history, m_history[:history]["val_acc"][1])
+    #     end
+    #     push!(loss_history, batch_loss_history[end])
+    #     if custom_earlyStopping(loss_history)
+    #         break
+    #     end
+    # end
 
     # if cls.use_cw
     #     model[:fit_generator](generator=trainBatchGenerator(cls.prov, train_gsms, train_labels, possible_labels_idx, mini_batches), steps_per_epoch=num_batches, epochs=epochs, verbose=true, shuffle=true,
@@ -239,15 +283,29 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     mini_batches_all = custom_minibatch(ssize,Int(round(ssize*0.1)))
     num_batches_all = length(mini_batches_all)
     all_probs = 0
+
     for mb in 1:num_batches_all
         mini_all_X = collect_vecs(cls.prov, all_gsms[mini_batches_all[mb][1]:mini_batches_all[mb][2]])
-        probs_mini = model[:predict](mini_all_X, verbose=true)
+        mini_all_X = transpose(mat(mini_all_X))
+        @show size(mini_all_X)
+        probs_mini = predict(w,mini_all_X)
+        @show size(probs_mini)
         if mb==1
             all_probs = probs_mini
         else
-            all_probs = vcat(all_probs, probs_mini)
+            all_probs = hcat(all_probs, probs_mini)
         end
     end
+
+    # for mb in 1:num_batches_all
+    #     mini_all_X = collect_vecs(cls.prov, all_gsms[mini_batches_all[mb][1]:mini_batches_all[mb][2]])
+    #     probs_mini = model[:predict](mini_all_X, verbose=true)
+    #     if mb==1
+    #         all_probs = probs_mini
+    #     else
+    #         all_probs = vcat(all_probs, probs_mini)
+    #     end
+    # end
 
     # all_X = collect_vecs(cls.prov, all_gsms)
     # all_probs = model[:predict](all_X, verbose=true)
@@ -255,10 +313,10 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
 
     resultBeliefs = Dict()
     @showprogress "Collecting results..." for (i, sample) in enumerate(all_gsms)
-      probs = all_probs[i, :]
+      probs = all_probs[:,i]
       resultBeliefs[sample] = collect(zip(predicted_terms[probs .> 1e-3], probs[probs .> 1e-3]))
     end
     # TODO confirm which history to return
     # resultBeliefs, (model[:get_weights](), predicted_terms, model[:history][:history])
-    resultBeliefs, (model[:get_weights](), predicted_terms)
+    resultBeliefs, (w, predicted_terms)
 end

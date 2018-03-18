@@ -19,10 +19,9 @@ include("coretrain_expr_sgd.jl")
 include("coretrain_fasttext.jl")
 include("vizio_data.jl")
 # Can also train on part of the data. Vizio data size (1174456))
-ExprProv, TextProv = load_vizio_data(1,100000)
+ExprProv, TextProv = load_vizio_data(1,10000)
 
 include("ezlearn_runner.jl")
-# include("sampling.jl")
 
 all_sample_ids = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_samples(TextProv))))
 
