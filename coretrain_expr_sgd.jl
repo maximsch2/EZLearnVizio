@@ -7,11 +7,11 @@ np.random[:seed](SEED)
 @pyimport tensorflow as tf
 tf.set_random_seed(SEED)
 
-@pyimport keras
-@pyimport keras.callbacks as kC
-@pyimport keras.models as kM
-@pyimport keras.layers as kL
-@pyimport keras.regularizers as kR
+# @pyimport keras
+# @pyimport keras.callbacks as kC
+# @pyimport keras.models as kM
+# @pyimport keras.layers as kL
+# @pyimport keras.regularizers as kR
 
 
 function get_class_weight(labels_matrix, smooth=0.1)
@@ -113,30 +113,6 @@ function getAtIndicesDict(dict_labels,indices)
     return filterDict
 end
 
-# function trainBatchGenerator(cls_prov, train_gsms, train_labels, possible_labels_idx, mini_batches)
-#     while true
-#       for mb in 1:length(mini_batches)
-#           train_gsms_mini = train_gsms[mini_batches[mb][1]:mini_batches[mb][2]]
-#           train_labels_mini = getAtIndicesDict(train_labels,mini_batches[mb][1]:mini_batches[mb][2])
-#           train_X_mini = collect_vecs(cls_prov, train_gsms_mini)
-#           train_Y_mini = get_labels_from_dict(train_gsms_mini, train_labels_mini, possible_labels_idx)'
-#           train_X_mini, train_Y_mini
-#       end
-#     end
-# end
-
-# function valBatchGenerator(cls_prov, val_gsms, val_labels, possible_labels_idx, val_mini_batches)
-#     while true
-#         for mbv in :length(val_mini_batches)
-#             val_gsms_mini = val_gsms[val_mini_batches[mb][1]:val_mini_batches[mb][2]]
-#             val_labels_mini = getAtIndicesDict(val_labels,mini_batches[mb][1]:mini_batches[mb][2])
-#             val_X_mini = collect_vecs(cls_prov, val_gsms_mini)
-#             val_Y_mini = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)
-#             val_X_mini, val_Y_mini
-#         end
-#     end
-# end
-
 function custom_earlyStopping(loss_history, patience=10,min_delta=0.01)
     # println(loss_history)
     num_epochs = length(loss_history)
@@ -148,6 +124,22 @@ function custom_earlyStopping(loss_history, patience=10,min_delta=0.01)
         end
     end
     return false
+end
+
+function predict(w,x)
+    for i=1:2:length(w)
+        x = w[i]*mat(x) .+ w[i+1]
+        if i<length(w)-1
+            x = relu.(x) # max(0,x)
+        end
+    end
+    return x
+end
+
+function loss(w,x,ygold)
+    ypred = predict(w,x)
+    ynorm = ypred .- log(sum(exp(ypred),1))
+        -sum(ygold .* ynorm) / size(ygold,2)
 end
 
 function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_labels)
@@ -182,17 +174,16 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # num_val_batches = length(val_mini_batches)
     train_X_temp = collect_vecs(cls.prov, train_gsms[1:3])
     # input = kL.Input(shape=(size(train_X_temp,2),))
-    predict(w,x) = w[1]*mat(x) .+ w[2]
-    loss(w,x,ygold) =  nll(predict(w,x), ygold)
 
     lossgradient = grad(loss)
 
-    w = Any[0.1*randn(Float32,size(possible_labels,1),size(train_X_temp,2)), zeros(Float32,size(possible_labels,1),1)]
-    Knetlr = 0.05
+    w = Any[ 0.1f0*randn(Float32,64,size(train_X_temp,2)), zeros(Float32,64,1),
+             0.1f0*randn(Float32,size(possible_labels,1),64),  zeros(Float32,size(possible_labels,1),1) ]
+    oAdam = optimizers(w, Adam)
+    lr = 0.05
     # activation = kL.Dense(Nlabels, activation="softmax", input_dim=minibatch_size,
     #     kernel_regularizer=kR.l2(cls.L2Reg), kernel_initializer="zeros")(input)
     #
-    # # TODO implement without keras
     # callbacks = []
     # if cls.droplr
     #   lrdrop = kC.ReduceLROnPlateau(monitor="val_loss", patience=5)
@@ -203,7 +194,6 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # model = kM.Model(inputs=input, outputs=activation)
     # model[:compile](optimizer=cls.optimizer, loss="categorical_crossentropy", metrics=["accuracy"])
 
-    # Convert train and val batches into generator
     val_X = collect_vecs(cls.prov, val_gsms)
     val_Y = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)'
     val_Y_int = []
@@ -212,12 +202,14 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     end
     val_X = transpose(mat(val_X))
     val_Y_int = convert(Array{UInt8},val_Y_int)
+    val_Y = transpose(mat(val_Y))
 
     loss_history = []
     m_history = 0
     for e in 1:epochs
         println((:epoch,e,"/",epochs))
         batchn = 0
+        batch_loss_history = []
         println((:batch,0,"/",num_batches))
         for mb in 1:num_batches
             batchn+=1
@@ -231,20 +223,19 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
             end
             train_X_mini = transpose(mat(train_X_mini))
             train_Y_mini_int = convert(Array{UInt8},train_Y_mini_int)
-
-            # for i in 1:length(train_Y_mini_int)
-            #     dw = lossgradient(w, train_X_mini[i,:], train_Y_mini_int[i])
-            #     for i in 1:length(w)
-            #         w[i] -= Knetlr * dw[i]
-            #     end
-            # end
-            dw = lossgradient(w, train_X_mini, train_Y_mini_int)
-            for i in 1:length(w)
-                w[i] -= Knetlr * dw[i]
-            end
-            println((:batch, batchn,"/",num_batches, :trn, loss(w,train_X_mini,train_Y_mini_int), :tst, loss(w,val_X,val_Y_int)))
+            train_Y_mini = transpose(train_Y_mini)
+            dw = lossgradient(w, train_X_mini, train_Y_mini)
+            Knet.update!(w, dw, oAdam)
+            val_loss = loss(w,val_X,val_Y)
+            push!(batch_loss_history,val_loss)
+            println((:batch, batchn,"/",num_batches, :trn, loss(w,train_X_mini,train_Y_mini), :tst, val_loss))
+        end
+        push!(loss_history,batch_loss_history[end])
+        if custom_earlyStopping(loss_history)
+            break
         end
     end
+
     # for e in 1:epochs
     #     println("Epoch No.: ",e,"/",epochs)
     #     batchn = 0
@@ -271,14 +262,6 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     #     end
     # end
 
-    # if cls.use_cw
-    #     model[:fit_generator](generator=trainBatchGenerator(cls.prov, train_gsms, train_labels, possible_labels_idx, mini_batches), steps_per_epoch=num_batches, epochs=epochs, verbose=true, shuffle=true,
-    #         validation_data=valBatchGenerator(cls.prov, val_gsms, val_labels, possible_labels_idx, val_mini_batches), validation_steps=num_val_batches, callbacks=callbacks, class_weight=cw)
-    # else
-    #     model[:fit_generator](generator=trainBatchGenerator(cls.prov, train_gsms, train_labels, possible_labels_idx, mini_batches), steps_per_epoch=1, epochs=epochs, verbose=true,
-    #         validation_data=valBatchGenerator(cls.prov, val_gsms, val_labels, possible_labels_idx, val_mini_batches), validation_steps=1, callbacks=callbacks)
-    # end
-
     # Prediction in batches
     mini_batches_all = custom_minibatch(ssize,Int(round(ssize*0.1)))
     num_batches_all = length(mini_batches_all)
@@ -287,9 +270,7 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     for mb in 1:num_batches_all
         mini_all_X = collect_vecs(cls.prov, all_gsms[mini_batches_all[mb][1]:mini_batches_all[mb][2]])
         mini_all_X = transpose(mat(mini_all_X))
-        @show size(mini_all_X)
         probs_mini = predict(w,mini_all_X)
-        @show size(probs_mini)
         if mb==1
             all_probs = probs_mini
         else
@@ -307,8 +288,7 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     #     end
     # end
 
-    # all_X = collect_vecs(cls.prov, all_gsms)
-    # all_probs = model[:predict](all_X, verbose=true)
+    # TODO fix probability output
     @show size(all_probs)
 
     resultBeliefs = Dict()

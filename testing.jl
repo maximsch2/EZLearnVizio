@@ -12,7 +12,6 @@ end
 
 function train(w, data; lr=.1)
     for (x,y) in data
-        println(y)
         dw = lossgradient(w, x, y)
         for i in 1:length(w)
             w[i] -= lr * dw[i]
@@ -42,4 +41,3 @@ for epoch=1:10
 end
 
 println((:accuracy, accuracy(w,dtrn,predict)))
-@show typeof(predict(w,xtst))
