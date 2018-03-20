@@ -19,7 +19,7 @@ include("coretrain_expr_sgd.jl")
 include("coretrain_fasttext.jl")
 include("arxiv_data.jl")
 
-ExprProv, TextProv = load_subset_data(1,10000)
+const ExprProv, TextProv = load_subset_data(1,10000)
 
 include("ezlearn_runner.jl")
 

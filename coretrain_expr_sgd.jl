@@ -138,7 +138,7 @@ end
 
 function loss(w,x,ygold)
     ypred = predict(w,x)
-    ynorm = ypred .- log(sum(exp(ypred),1))
+    ynorm = ypred .- log.(sum(exp.(ypred),1))
         -sum(ygold .* ynorm) / size(ygold,2)
 end
 
@@ -176,7 +176,7 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # input = kL.Input(shape=(size(train_X_temp,2),))
 
     lossgradient = grad(loss)
-
+    expit(x) = exp(x)/(1+exp(x))
     w = Any[ 0.1f0*randn(Float32,64,size(train_X_temp,2)), zeros(Float32,64,1),
              0.1f0*randn(Float32,size(possible_labels,1),64),  zeros(Float32,size(possible_labels,1),1) ]
     oAdam = optimizers(w, Adam)
@@ -270,7 +270,9 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     for mb in 1:num_batches_all
         mini_all_X = collect_vecs(cls.prov, all_gsms[mini_batches_all[mb][1]:mini_batches_all[mb][2]])
         mini_all_X = transpose(mat(mini_all_X))
-        probs_mini = predict(w,mini_all_X)
+        preds_mini = predict(w,mini_all_X)
+        probs_mini = expit.(preds_mini)
+        println(probs_mini)
         if mb==1
             all_probs = probs_mini
         else
@@ -288,7 +290,6 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     #     end
     # end
 
-    # TODO fix probability output
     @show size(all_probs)
 
     resultBeliefs = Dict()
@@ -296,7 +297,7 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
       probs = all_probs[:,i]
       resultBeliefs[sample] = collect(zip(predicted_terms[probs .> 1e-3], probs[probs .> 1e-3]))
     end
-    # TODO confirm which history to return
+    # TODO confirm what history to return
     # resultBeliefs, (model[:get_weights](), predicted_terms, model[:history][:history])
     resultBeliefs, (w, predicted_terms)
 end
