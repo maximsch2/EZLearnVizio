@@ -19,7 +19,8 @@ include("coretrain_expr_sgd.jl")
 include("coretrain_fasttext.jl")
 include("arxiv_data.jl")
 
-const ExprProv, TextProv = load_subset_data(1,10000)
+# Total length is 1502287
+const ExprProv, TextProv = load_subset_data(1,1502287)
 
 include("ezlearn_runner.jl")
 

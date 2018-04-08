@@ -76,7 +76,7 @@ end
 
 function get_labels_from_dict(gsms, labels_dict::Dict{String, Vector{String}}, idx_dict)
     Nsamples = length(gsms)
-    y = zeros(Float32, (length(idx_dict), Nsamples))
+    y = zeros(Float64, (length(idx_dict), Nsamples))
     for i in 1:Nsamples
         gsm = gsms[i]
         if haskey(labels_dict, gsm)
@@ -142,6 +142,14 @@ function loss(w,x,ygold)
         -sum(ygold .* ynorm) / size(ygold,2)
 end
 
+function confussionmatrix(predictions, labels, d)
+   c = zeros(d,d)
+   for i in 1:length(labels)
+       c[labels[i] + 1 ,predictions[i] + 1] += 1
+   end
+   return c
+end
+
 function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_labels)
     ssize = length(all_gsms)
     # approx 5% for validation
@@ -177,8 +185,8 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
 
     lossgradient = grad(loss)
     expit(x) = exp(x)/(1+exp(x))
-    w = Any[ 0.1f0*randn(Float32,64,size(train_X_temp,2)), zeros(Float32,64,1),
-             0.1f0*randn(Float32,size(possible_labels,1),64),  zeros(Float32,size(possible_labels,1),1) ]
+    w = Any[ 0.1f0*randn(Float64,64,size(train_X_temp,2)), zeros(Float64,64,1),
+             0.1f0*randn(Float64,size(possible_labels,1),64),  zeros(Float64,size(possible_labels,1),1) ]
     oAdam = optimizers(w, Adam)
     lr = 0.05
     # activation = kL.Dense(Nlabels, activation="softmax", input_dim=minibatch_size,
@@ -201,7 +209,7 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
         append!(val_Y_int,indmax(val_Y[yind,:]))
     end
     val_X = transpose(mat(val_X))
-    val_Y_int = convert(Array{UInt8},val_Y_int)
+    # val_Y_int = convert(Array{UInt8},val_Y_int)
     val_Y = transpose(mat(val_Y))
 
     loss_history = []
@@ -272,7 +280,6 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
         mini_all_X = transpose(mat(mini_all_X))
         preds_mini = predict(w,mini_all_X)
         probs_mini = expit.(preds_mini)
-        println(probs_mini)
         if mb==1
             all_probs = probs_mini
         else
@@ -280,15 +287,16 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
         end
     end
 
-    # for mb in 1:num_batches_all
-    #     mini_all_X = collect_vecs(cls.prov, all_gsms[mini_batches_all[mb][1]:mini_batches_all[mb][2]])
-    #     probs_mini = model[:predict](mini_all_X, verbose=true)
-    #     if mb==1
-    #         all_probs = probs_mini
-    #     else
-    #         all_probs = vcat(all_probs, probs_mini)
-    #     end
-    # end
+    val_preds = predict(w,val_X)
+    val_probs = expit.(val_preds)
+
+    predictions = []
+    for row_n in 1:size(val_probs,2)
+        max_index = indmax(val_probs[:,row_n])
+        push!(predictions,max_index)
+    end
+
+    println(confussionmatrix(predictions, val_Y_int, length(possible_labels)))
 
     @show size(all_probs)
 
