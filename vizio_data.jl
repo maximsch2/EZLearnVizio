@@ -10,7 +10,7 @@ const vizio_captions_h5 = h5open("data/vizio_captions.h5", "r")
 const vizio_all_captions = read(vizio_captions_h5["captions"]);
 
 get_caption(sample_id) = vizio_all_captions[h5_samples_dict_upcase[sample_id]]
-
+# println(h5_samples_dict)
 # Reset back to normal
 # Ignore samples with no labels for training but not prediction
 function load_vizio_data(start_i,batch_size)
@@ -50,5 +50,5 @@ function construct_initial_labels(all_samples, all_terms)
       result[sample] = res
     end
   end
-  BeliefDict(result)
+  BeliefDict(result), result
 end
