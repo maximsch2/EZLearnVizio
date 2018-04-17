@@ -31,16 +31,15 @@ all_sample_ids = collect(intersect(Set(get_all_samples(ExprProv)), Set(get_all_s
 #initial = get_initial_beliefs("data/init_vizio.sqlite", "text_1", all_sample_ids)
 initial, precomputed = construct_initial_labels(all_sample_ids, OBOParse.allterms(ONTOLOGY))
 
-save("data/vizio_precomp.jld","data",precomputed)
-# precomputed = load("data/vizio_precomp.jld")["data"]
+save("data/precomp.jld","data",precomputed)
+# precomputed = load("data/precomp.jld")["data"]
 
 filtered_pc = (pc for pc in keys(precomputed) if length(precomputed[pc])==1)
-filtered_precompute = Dict()
+filtered_precompute = Dict{String,Array{String,1}}()
 for pc in filtered_pc
-    filtered_precompute[pc] = parse(Int32,precomputed[pc][1][1][end-1:end])
+    filtered_precompute[pc] = [precomputed[pc][1][1]]
 end
-
-save("data/vizio_precomp_final.jld","data",filtered_precompute)
+save("data/precomp_final.jld","data",filtered_precompute)
 
 task = initialize_task(PARAMS, all_sample_ids, initial)
 run_task(task)

@@ -107,9 +107,9 @@ function getAtIndicesDict(dict_labels,indices)
     for (n, val) in enumerate(dict_labels)
         counter+=1
         if counter in indices
-			filterDict[val[1]] = val[2]
+          filterDict[val[1]] = val[2]
         end
-	end
+    end
     return filterDict
 end
 
@@ -143,7 +143,7 @@ function loss(w,x,ygold)
 end
 
 function confussionmatrix(predictions, labels, d)
-   c = zeros(d,d)
+   c = zeros(Int32,d,d)
    for i in 1:length(labels)
        c[labels[i] + 1 ,predictions[i] + 1] += 1
    end
@@ -163,15 +163,17 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     train_gsms = sort(collect(keys(train_labels)))
     val_gsms = sort(collect(keys(val_labels)))
 
+    cross_val_labels = load("data/precomp_final.jld")["data"]
+    cross_val_gsms = collect(keys(cross_val_labels))
+
     @show SEED
     srand(SEED)
     train_gsms = train_gsms[randperm(length(train_gsms))]
 
     possible_labels = unique(vcat(values(train_labels)...));
     possible_labels_idx = Dict([(possible_labels[i], i) for i=1:length(possible_labels)])
-	predicted_terms = Int32[parse(Int64, bto[5:end]) for bto in possible_labels]
+    predicted_terms = Int32[parse(Int64, bto[5:end]) for bto in possible_labels]
 
-    # labels_int = Int32[parse(Int32, getAtIndicesDict(bto,5:length(bto))) for bto in possible_labels]
     Nlabels = length(possible_labels)
 
     minibatch_size = cls.batch_size
@@ -181,7 +183,6 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # val_mini_batches = custom_minibatch(val_size,val_batch_size)
     # num_val_batches = length(val_mini_batches)
     train_X_temp = collect_vecs(cls.prov, train_gsms[1:3])
-    # input = kL.Input(shape=(size(train_X_temp,2),))
 
     lossgradient = grad(loss)
     expit(x) = exp(x)/(1+exp(x))
@@ -203,14 +204,22 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
     # model[:compile](optimizer=cls.optimizer, loss="categorical_crossentropy", metrics=["accuracy"])
 
     val_X = collect_vecs(cls.prov, val_gsms)
+    cross_val_X = collect_vecs(cls.prov, cross_val_gsms)
     val_Y = get_labels_from_dict(val_gsms, val_labels, possible_labels_idx)'
-    val_Y_int = []
-    for yind in 1:size(val_Y,1)
-        append!(val_Y_int,indmax(val_Y[yind,:]))
+    cross_val_Y = get_labels_from_dict(cross_val_gsms, cross_val_labels, possible_labels_idx)'
+    # val_Y_int = []
+    # for yind in 1:size(val_Y,1)
+    #     append!(val_Y_int,indmax(val_Y[yind,:]))
+    # end
+    cross_val_Y_int = []
+    for yind in 1:size(cross_val_Y,1)
+        append!(cross_val_Y_int,indmax(cross_val_Y[yind,:]))
     end
     val_X = transpose(mat(val_X))
-    # val_Y_int = convert(Array{UInt8},val_Y_int)
     val_Y = transpose(mat(val_Y))
+    cross_val_X = transpose(mat(cross_val_X))
+    cross_val_Y = transpose(mat(cross_val_Y))
+    # val_Y_int = convert(Array{UInt8},val_Y_int)
 
     loss_history = []
     m_history = 0
@@ -225,12 +234,12 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
             train_labels_mini = getAtIndicesDict(train_labels,mini_batches[mb][1]:mini_batches[mb][2])
             train_X_mini = collect_vecs(cls.prov, train_gsms_mini)
             train_Y_mini = get_labels_from_dict(train_gsms_mini, train_labels_mini, possible_labels_idx)'
-            train_Y_mini_int = []
-            for yind in 1:size(train_Y_mini,1)
-                append!(train_Y_mini_int,indmax(train_Y_mini[yind,:]))
-            end
+            # train_Y_mini_int = []
+            # for yind in 1:size(train_Y_mini,1)
+            #     append!(train_Y_mini_int,indmax(train_Y_mini[yind,:]))
+            # end
             train_X_mini = transpose(mat(train_X_mini))
-            train_Y_mini_int = convert(Array{UInt8},train_Y_mini_int)
+            # train_Y_mini_int = convert(Array{UInt8},train_Y_mini_int)
             train_Y_mini = transpose(train_Y_mini)
             dw = lossgradient(w, train_X_mini, train_Y_mini)
             Knet.update!(w, dw, oAdam)
@@ -287,16 +296,18 @@ function train_expr_sgd_file(cls::SGDExpressionClassifier, all_gsms, train_label
         end
     end
 
-    val_preds = predict(w,val_X)
-    val_probs = expit.(val_preds)
+    cross_val_preds = predict(w,cross_val_X)
+    cross_val_probs = expit.(cross_val_preds)
 
     predictions = []
-    for row_n in 1:size(val_probs,2)
-        max_index = indmax(val_probs[:,row_n])
+    for row_n in 1:size(cross_val_probs,2)
+        max_index = indmax(cross_val_probs[:,row_n])
         push!(predictions,max_index)
     end
 
-    println(confussionmatrix(predictions, val_Y_int, length(possible_labels)))
+    cfm = confussionmatrix(predictions, cross_val_Y_int, length(possible_labels))
+    println("Confusion Matrix\n",cfm)
+    println("Accuracy: ",sum(Diagonal(cfm))/sum(cfm))
 
     @show size(all_probs)
 
